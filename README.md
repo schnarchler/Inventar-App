@@ -2,6 +2,12 @@
 
 Eine Flutter-App für Android zur Verwaltung des eigenen Vorrats: Produkte erfassen, Fächern zuordnen und Ablaufdaten im Blick behalten. Die App zeigt, was als Nächstes abläuft und was ersetzt werden muss — inklusive Erinnerung per Benachrichtigung.
 
+<p align="center">
+  <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/1.png" width="30%" alt="Übersicht mit Dashboard und Ablauf-Liste"/>
+  <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/2.png" width="30%" alt="Produkte gruppiert nach farbigen Fächern"/>
+  <img src="fastlane/metadata/android/de-DE/images/phoneScreenshots/3.png" width="30%" alt="Produkt mit Posten und Ablaufdatum erfassen"/>
+</p>
+
 ## Funktionen
 
 - **Übersicht**: Produkte gruppiert nach Dringlichkeit
