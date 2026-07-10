@@ -1,8 +1,15 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/inventory_provider.dart';
 import '../providers/settings_provider.dart';
+import '../services/backup_service.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -33,6 +40,86 @@ class SettingsScreen extends StatelessWidget {
     );
     if (picked != null && context.mounted) {
       await _change(context, reminderTime: picked);
+    }
+  }
+
+  void _showMessage(BuildContext context, String message) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _export(BuildContext context) async {
+    final settings = context.read<SettingsProvider>();
+    try {
+      final data = await BackupService.instance.buildExport(settings.toJson());
+      final bytes = Uint8List.fromList(
+          utf8.encode(const JsonEncoder.withIndent('  ').convert(data)));
+      final fileName =
+          'inventar-backup-${DateFormat('yyyy-MM-dd').format(DateTime.now())}.json';
+      final path = await FilePicker.saveFile(
+        dialogTitle: 'Sicherung speichern',
+        fileName: fileName,
+        type: FileType.custom,
+        allowedExtensions: const ['json'],
+        bytes: bytes,
+      );
+      if (path != null && context.mounted) {
+        _showMessage(context, 'Sicherung gespeichert.');
+      }
+    } catch (e) {
+      if (context.mounted) _showMessage(context, 'Export fehlgeschlagen: $e');
+    }
+  }
+
+  Future<void> _import(BuildContext context) async {
+    final settings = context.read<SettingsProvider>();
+    final inventory = context.read<InventoryProvider>();
+    try {
+      final result = await FilePicker.pickFiles(
+        dialogTitle: 'Sicherung auswählen',
+        type: FileType.custom,
+        allowedExtensions: const ['json'],
+        withData: true,
+      );
+      if (result == null || result.files.isEmpty) return;
+      final file = result.files.single;
+      final bytes = file.bytes ?? await File(file.path!).readAsBytes();
+      final data = jsonDecode(utf8.decode(bytes)) as Map<String, Object?>;
+
+      if (!context.mounted) return;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Sicherung importieren?'),
+          content: const Text(
+              'Alle aktuellen Produkte, Fächer und Einstellungen werden '
+              'durch den Inhalt der Sicherung ersetzt.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Abbrechen'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Importieren'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+
+      final importedSettings = await BackupService.instance.restore(data);
+      if (importedSettings != null) {
+        await settings.applyJson(importedSettings);
+      }
+      await inventory.load();
+      await inventory.rescheduleAllNotifications();
+      if (context.mounted) _showMessage(context, 'Import abgeschlossen.');
+    } on FormatException catch (e) {
+      if (context.mounted) _showMessage(context, e.message);
+    } catch (e) {
+      if (context.mounted) _showMessage(context, 'Import fehlgeschlagen: $e');
     }
   }
 
@@ -81,6 +168,22 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
             onTap: () => _pickTime(context),
+          ),
+          const Divider(),
+          const _SectionTitle('Daten'),
+          ListTile(
+            leading: const Icon(Icons.upload_outlined),
+            title: const Text('Daten exportieren'),
+            subtitle: const Text(
+                'Sichert Produkte, Fächer und Einstellungen als JSON-Datei.'),
+            onTap: () => _export(context),
+          ),
+          ListTile(
+            leading: const Icon(Icons.download_outlined),
+            title: const Text('Daten importieren'),
+            subtitle: const Text(
+                'Ersetzt die aktuellen Daten durch eine Sicherungsdatei.'),
+            onTap: () => _import(context),
           ),
         ],
       ),

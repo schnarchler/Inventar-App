@@ -12,6 +12,7 @@ Eine Flutter-App für Android zur Verwaltung des eigenen Vorrats: Produkte erfas
 - **Produktliste** gruppiert nach Fächern als farbige, aufklappbare Karten mit Mengen-Badges („Alle aufklappen/zuklappen“)
 - **Fächer** verwalten (z. B. Kühlschrank, Keller, Vorratsschrank) mit frei wählbarer **Farbe** für bessere Übersicht
 - **Benachrichtigungen**: Erinnerung vor dem Ablauf und am Ablauftag, auch nach einem Geräte-Neustart; Vorlauf und Uhrzeit in den **Einstellungen** frei wählbar (ebenso die Schwelle für die orange Warnung)
+- **Export/Import**: alle Daten (Produkte, Fächer, Einstellungen) als JSON-Datei sichern und wiederherstellen — z. B. für Gerätewechsel oder den Umstieg auf die F-Droid-Version
 - **Offline & privat**: alle Daten liegen lokal in einer SQLite-Datenbank auf dem Gerät, kein Konto nötig
 - Deutsche Oberfläche, helles und dunkles Design (Material 3)
 

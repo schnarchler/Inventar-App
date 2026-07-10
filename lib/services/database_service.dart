@@ -159,6 +159,31 @@ class DatabaseService {
     await db.delete('products', where: 'id = ?', whereArgs: [id]);
   }
 
+  /// Ersetzt sämtliche Daten (für den Import einer Sicherung).
+  Future<void> replaceAll({
+    required List<StorageLocation> locations,
+    required List<Product> products,
+  }) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('batches');
+      await txn.delete('products');
+      await txn.delete('locations');
+      for (final location in locations) {
+        await txn.insert('locations', location.toMap());
+      }
+      for (final product in products) {
+        await txn.insert('products', product.toMap());
+        for (final batch in product.batches) {
+          final map = batch.toMap()
+            ..remove('id')
+            ..['productId'] = product.id;
+          await txn.insert('batches', map);
+        }
+      }
+    });
+  }
+
   // ---------- Orte ----------
 
   Future<List<StorageLocation>> getLocations() async {

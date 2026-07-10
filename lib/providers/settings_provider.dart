@@ -50,6 +50,24 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Map<String, Object?> toJson() => {
+        'warnDays': warnDays,
+        'reminderDays': reminderDays,
+        'reminderHour': reminderTime.hour,
+        'reminderMinute': reminderTime.minute,
+      };
+
+  Future<void> applyJson(Map<String, Object?> json) => update(
+        warnDays: json['warnDays'] as int?,
+        reminderDays: json['reminderDays'] as int?,
+        reminderTime: json['reminderHour'] is int && json['reminderMinute'] is int
+            ? TimeOfDay(
+                hour: json['reminderHour'] as int,
+                minute: json['reminderMinute'] as int,
+              )
+            : null,
+      );
+
   void _apply() {
     expiryWarnDays = warnDays;
     NotificationService.instance.configure(
