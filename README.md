@@ -68,11 +68,37 @@ flutter run
 # Debug-APK bauen
 flutter build apk --debug
 
-# Release-APK bauen (benötigt eigene Signierung für den Play Store)
-flutter build apk --release
+# Release-APKs bauen (eine pro Prozessor-Architektur, ~20 MB statt ~55 MB)
+flutter build apk --release --split-per-abi
 ```
 
-Die fertige APK liegt danach unter `build/app/outputs/flutter-apk/`.
+Die fertigen APKs liegen danach unter `build/app/outputs/flutter-apk/`. Für die meisten aktuellen Geräte ist `app-arm64-v8a-release.apk` die richtige Datei.
+
+## Release-Signierung & Veröffentlichung auf GitHub
+
+Ohne eigene Signierung wird mit dem Debug-Schlüssel signiert (nur für lokale Tests geeignet). Für öffentliche Releases:
+
+1. Einmalig einen Keystore erzeugen (Passwort wird interaktiv abgefragt, Datei **außerhalb** des Repos ablegen und sicher aufbewahren — ohne ihn sind keine Updates mehr möglich):
+
+   ```bash
+   mkdir -p ~/.android-keys
+   keytool -genkey -v -keystore ~/.android-keys/inventar-release.jks \
+     -keyalg RSA -keysize 2048 -validity 10000 -alias inventar
+   ```
+
+2. `android/key.properties.example` nach `android/key.properties` kopieren und die Passwörter eintragen (die Datei ist von Git ausgeschlossen).
+
+3. Bauen: `flutter build apk --release --split-per-abi` — die APKs sind jetzt mit deinem Schlüssel signiert.
+
+4. Als GitHub-Release veröffentlichen:
+
+   ```bash
+   git tag v1.0.0 && git push --tags
+   gh release create v1.0.0 build/app/outputs/flutter-apk/app-*-release.apk \
+     --title "Inventar 1.0.0" --notes "Erste Version"
+   ```
+
+Hinweis: Die F-Droid-Version wird von F-Droid selbst signiert. Ein Wechsel zwischen GitHub-APK und F-Droid-Version erfordert eine Neuinstallation — vorher die Daten über Einstellungen → „Daten exportieren“ sichern.
 
 ## Tests
 

@@ -1,0 +1,7 @@
+# Vorlage für die Release-Signierung.
+# Kopieren nach: android/key.properties (wird von Git ignoriert!)
+# Werte anpassen — Passwörter niemals committen.
+storePassword=DEIN_KEYSTORE_PASSWORT
+keyPassword=DEIN_KEY_PASSWORT
+keyAlias=inventar
+storeFile=/home/msu/.android-keys/inventar-release.jks
