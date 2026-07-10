@@ -77,6 +77,8 @@ class _LocationEditorDialogState extends State<_LocationEditorDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      // Scrollbar, damit bei geöffneter Tastatur nichts überläuft.
+      scrollable: true,
       title: Text(widget.existing == null ? 'Neuer Ort' : 'Ort bearbeiten'),
       content: Column(
         mainAxisSize: MainAxisSize.min,

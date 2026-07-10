@@ -6,15 +6,27 @@ import 'package:timezone/timezone.dart' as tz;
 import '../models/product.dart';
 
 /// Plant lokale Benachrichtigungen pro Bestand (Posten): eine Erinnerung
-/// 3 Tage vor Ablauf und eine am Ablauftag, jeweils um 9:00 Uhr.
+/// einige Tage vor Ablauf und eine am Ablauftag. Vorlauf und Uhrzeit
+/// kommen aus den Einstellungen (siehe [configure]).
 class NotificationService {
   static final NotificationService instance = NotificationService._();
   NotificationService._();
 
   final _plugin = FlutterLocalNotificationsPlugin();
 
-  static const _reminderDaysBefore = 3;
-  static const _notificationHour = 9;
+  int _reminderDaysBefore = 3;
+  int _hour = 9;
+  int _minute = 0;
+
+  void configure({
+    required int reminderDaysBefore,
+    required int hour,
+    required int minute,
+  }) {
+    _reminderDaysBefore = reminderDaysBefore;
+    _hour = hour;
+    _minute = minute;
+  }
 
   Future<void> init() async {
     tz_data.initializeTimeZones();
@@ -45,16 +57,20 @@ class NotificationService {
 
       final quantityHint =
           batch.quantity > 1 ? ' (${batch.quantity} Stück)' : '';
-      await _schedule(
-        notificationId: batchId * 10,
-        when: DateTime(expiry.year, expiry.month,
-            expiry.day - _reminderDaysBefore, _notificationHour),
-        title: 'Läuft bald ab: ${product.name}',
-        body: 'Läuft in $_reminderDaysBefore Tagen ab$quantityHint.',
-      );
+      if (_reminderDaysBefore > 0) {
+        await _schedule(
+          notificationId: batchId * 10,
+          when: DateTime(expiry.year, expiry.month,
+              expiry.day - _reminderDaysBefore, _hour, _minute),
+          title: 'Läuft bald ab: ${product.name}',
+          body: _reminderDaysBefore == 1
+              ? 'Läuft morgen ab$quantityHint.'
+              : 'Läuft in $_reminderDaysBefore Tagen ab$quantityHint.',
+        );
+      }
       await _schedule(
         notificationId: batchId * 10 + 1,
-        when: DateTime(expiry.year, expiry.month, expiry.day, _notificationHour),
+        when: DateTime(expiry.year, expiry.month, expiry.day, _hour, _minute),
         title: 'Heute abgelaufen: ${product.name}',
         body: 'Das Produkt sollte ersetzt werden$quantityHint.',
       );
@@ -95,4 +111,6 @@ class NotificationService {
       await _plugin.cancel(id: batchId * 10 + 1);
     }
   }
+
+  Future<void> cancelAll() => _plugin.cancelAll();
 }

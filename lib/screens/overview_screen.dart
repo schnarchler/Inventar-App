@@ -5,8 +5,8 @@ import '../models/product.dart';
 import '../providers/inventory_provider.dart';
 import '../widgets/product_tile.dart';
 
-/// Übersicht: was ist abgelaufen (ersetzen) und was läuft als Nächstes ab.
-/// Jeder Posten erscheint einzeln mit seinem eigenen Ablaufdatum.
+/// Übersicht: kleines Dashboard oben, darunter was abgelaufen ist
+/// (ersetzen) und was als Nächstes abläuft — jeder Posten einzeln.
 class OverviewScreen extends StatelessWidget {
   const OverviewScreen({super.key});
 
@@ -22,17 +22,17 @@ class OverviewScreen extends StatelessWidget {
     final upcoming =
         entries.where((e) => e.batch.status == ExpiryStatus.ok).toList();
 
-    if (entries.isEmpty) {
+    if (provider.products.isEmpty) {
       return const Center(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: EdgeInsets.all(32),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey),
               SizedBox(height: 16),
               Text(
-                'Noch keine Produkte mit Ablaufdatum.\n'
+                'Noch keine Produkte.\n'
                 'Füge unter „Produkte“ etwas hinzu.',
                 textAlign: TextAlign.center,
               ),
@@ -42,9 +42,53 @@ class OverviewScreen extends StatelessWidget {
       );
     }
 
+    final totalPieces =
+        provider.products.fold(0, (sum, p) => sum + p.totalQuantity);
+
     return ListView(
       padding: const EdgeInsets.only(bottom: 24),
       children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: _StatTile(
+                  label: 'Abgelaufen',
+                  value: expired.length,
+                  icon: Icons.error_outline,
+                  iconColor: Colors.red.shade700,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _StatTile(
+                  label: 'Nächste $expiryWarnDays Tage',
+                  value: soon.length,
+                  icon: Icons.warning_amber_outlined,
+                  iconColor: Colors.orange.shade800,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _StatTile(
+                  label: 'Bestand (Stück)',
+                  value: totalPieces,
+                  icon: Icons.inventory_2_outlined,
+                  iconColor: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (entries.isEmpty)
+          const Padding(
+            padding: EdgeInsets.all(32),
+            child: Text(
+              'Für deine Produkte sind noch keine Ablaufdaten hinterlegt.',
+              textAlign: TextAlign.center,
+            ),
+          ),
         if (expired.isNotEmpty) ...[
           _SectionHeader(
             icon: Icons.error_outline,
@@ -57,7 +101,8 @@ class OverviewScreen extends StatelessWidget {
           _SectionHeader(
             icon: Icons.warning_amber_outlined,
             color: Colors.orange.shade800,
-            title: 'Läuft in den nächsten 7 Tagen ab (${soon.length})',
+            title: 'Läuft in den nächsten $expiryWarnDays Tagen ab '
+                '(${soon.length})',
           ),
           ..._tiles(context, soon, provider),
         ],
@@ -78,7 +123,7 @@ class OverviewScreen extends StatelessWidget {
       [
         for (final entry in entries)
           Card(
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
             child: ProductRow(
               product: entry.product,
               batch: entry.batch,
@@ -86,6 +131,66 @@ class OverviewScreen extends StatelessWidget {
             ),
           ),
       ];
+}
+
+/// Kennzahl-Kachel: Beschriftung + Icon oben, große Zahl darunter.
+/// Die Statusfarbe sitzt nur am Icon; die Zahl bleibt in Textfarbe.
+class _StatTile extends StatelessWidget {
+  final String label;
+  final int value;
+  final IconData icon;
+  final Color iconColor;
+
+  const _StatTile({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.iconColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        border: Border.all(color: scheme.outlineVariant),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 16, color: iconColor),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '$value',
+            style: TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.w600,
+              color: scheme.onSurface,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _SectionHeader extends StatelessWidget {
@@ -102,17 +207,19 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
       child: Row(
         children: [
           Icon(icon, color: color, size: 20),
           const SizedBox(width: 8),
-          Text(
-            title,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
             ),
           ),
         ],

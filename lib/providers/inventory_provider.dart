@@ -68,6 +68,16 @@ class InventoryProvider extends ChangeNotifier {
     await load();
   }
 
+  /// Plant alle Erinnerungen neu, z. B. nach geänderten Einstellungen.
+  Future<void> rescheduleAllNotifications() async {
+    await _notifications.cancelAll();
+    for (final product in _products) {
+      await _notifications.scheduleForProduct(product);
+    }
+    // Status-Gruppierung (orange-Schwelle) neu berechnen lassen.
+    notifyListeners();
+  }
+
   // ---------- Orte ----------
 
   Future<void> addLocation(String name, int? color) async {

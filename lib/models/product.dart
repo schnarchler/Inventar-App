@@ -1,5 +1,9 @@
 enum ExpiryStatus { expired, expiringSoon, ok, none }
 
+/// Schwelle in Tagen, ab der ein Posten als „läuft bald ab“ (orange) gilt.
+/// Wird beim App-Start und bei Änderungen aus den Einstellungen gesetzt.
+int expiryWarnDays = 7;
+
 /// Tage bis zum Ablauf; negativ = bereits abgelaufen, null = kein Datum.
 int? daysUntil(DateTime? expiry) {
   if (expiry == null) return null;
@@ -13,7 +17,7 @@ ExpiryStatus statusFor(int? daysUntilExpiry) {
   final days = daysUntilExpiry;
   if (days == null) return ExpiryStatus.none;
   if (days < 0) return ExpiryStatus.expired;
-  if (days <= 7) return ExpiryStatus.expiringSoon;
+  if (days <= expiryWarnDays) return ExpiryStatus.expiringSoon;
   return ExpiryStatus.ok;
 }
 

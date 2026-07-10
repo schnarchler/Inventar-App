@@ -3,22 +3,30 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/inventory_provider.dart';
+import 'providers/settings_provider.dart';
 import 'screens/locations_screen.dart';
 import 'screens/overview_screen.dart';
 import 'screens/product_form_screen.dart';
 import 'screens/products_screen.dart';
+import 'screens/settings_screen.dart';
 import 'services/notification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await NotificationService.instance.init();
 
-  final provider = InventoryProvider();
-  await provider.load();
+  final settings = SettingsProvider();
+  await settings.load();
+
+  final inventory = InventoryProvider();
+  await inventory.load();
 
   runApp(
-    ChangeNotifierProvider.value(
-      value: provider,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: settings),
+        ChangeNotifierProvider.value(value: inventory),
+      ],
       child: const InventarApp(),
     ),
   );
@@ -33,6 +41,18 @@ class InventarApp extends StatelessWidget {
   ThemeData _theme(Brightness brightness) => ThemeData(
         colorSchemeSeed: _navy,
         brightness: brightness,
+        // Kompakteres Layout, damit mehr auf den Bildschirm passt.
+        visualDensity: VisualDensity.compact,
+        listTileTheme: const ListTileThemeData(
+          dense: true,
+          visualDensity: VisualDensity.compact,
+        ),
+        navigationBarTheme: NavigationBarThemeData(
+          height: 56,
+          labelTextStyle: WidgetStatePropertyAll(
+            TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+          ),
+        ),
         appBarTheme: const AppBarTheme(
           backgroundColor: _navy,
           foregroundColor: Colors.white,
@@ -94,7 +114,18 @@ class _RootScreenState extends State<RootScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_titles[_index])),
+      appBar: AppBar(
+        title: Text(_titles[_index]),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Einstellungen',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+            ),
+          ),
+        ],
+      ),
       body: IndexedStack(
         index: _index,
         children: const [

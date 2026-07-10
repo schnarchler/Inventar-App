@@ -17,8 +17,9 @@ class ProductsScreen extends StatefulWidget {
 class _ProductsScreenState extends State<ProductsScreen> {
   String _query = '';
 
-  /// IDs der zugeklappten Orte (null = Gruppe „Ohne Ort“).
-  final Set<int?> _collapsed = {};
+  /// IDs der aufgeklappten Orte (null = Gruppe „Ohne Ort“);
+  /// standardmäßig ist alles zugeklappt.
+  final Set<int?> _expanded = {};
 
   bool get _searching => _query.trim().isNotEmpty;
 
@@ -39,8 +40,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
     ]..removeWhere((g) => g.$2.isEmpty && (_searching || g.$1 == null));
 
     final allGroupKeys = groups.map((g) => g.$1?.id).toSet();
-    final allCollapsed =
-        allGroupKeys.isNotEmpty && allGroupKeys.every(_collapsed.contains);
+    final allExpanded =
+        allGroupKeys.isNotEmpty && allGroupKeys.every(_expanded.contains);
 
     return Column(
       children: [
@@ -58,15 +59,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
             onPressed: groups.isEmpty
                 ? null
                 : () => setState(() {
-                      if (allCollapsed) {
-                        _collapsed.clear();
+                      if (allExpanded) {
+                        _expanded.clear();
                       } else {
-                        _collapsed.addAll(allGroupKeys);
+                        _expanded.addAll(allGroupKeys);
                       }
                     }),
-            icon: Icon(allCollapsed ? Icons.unfold_more : Icons.unfold_less,
+            icon: Icon(allExpanded ? Icons.unfold_less : Icons.unfold_more,
                 size: 18),
-            label: Text(allCollapsed ? 'Alle aufklappen' : 'Alle zuklappen'),
+            label: Text(allExpanded ? 'Alle zuklappen' : 'Alle aufklappen'),
           ),
         ),
         Expanded(
@@ -88,11 +89,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         products: products,
                         // Bei aktiver Suche immer aufgeklappt anzeigen.
                         expanded: _searching ||
-                            !_collapsed.contains(location?.id),
+                            _expanded.contains(location?.id),
                         onToggle: () => setState(() {
-                          _collapsed.contains(location?.id)
-                              ? _collapsed.remove(location?.id)
-                              : _collapsed.add(location?.id);
+                          _expanded.contains(location?.id)
+                              ? _expanded.remove(location?.id)
+                              : _expanded.add(location?.id);
                         }),
                       ),
                   ],
@@ -126,7 +127,7 @@ class _LocationSection extends StatelessWidget {
         products.fold(0, (sum, p) => sum + p.totalQuantity);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: 6),
       decoration: BoxDecoration(
         border: Border.all(color: color.withValues(alpha: 0.6), width: 1.4),
         borderRadius: BorderRadius.circular(14),
@@ -139,7 +140,7 @@ class _LocationSection extends StatelessWidget {
             child: Container(
               color: color.withValues(alpha: 0.08),
               padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               child: Row(
                 children: [
                   Icon(
