@@ -3,8 +3,9 @@ import 'package:provider/provider.dart';
 
 import '../models/location.dart';
 import '../providers/inventory_provider.dart';
+import '../widgets/product_tile.dart';
 
-/// Farbpalette für Orte (ARGB-Werte).
+/// Farbpalette für Fächer (ARGB-Werte).
 const locationColorPalette = <int>[
   0xFFE53935, // Rot
   0xFFD81B60, // Pink
@@ -20,7 +21,7 @@ const locationColorPalette = <int>[
   0xFF6D4C41, // Braun
 ];
 
-/// Öffnet den Dialog zum Anlegen oder Bearbeiten eines Ortes.
+/// Öffnet den Dialog zum Anlegen oder Bearbeiten eines Fachs.
 Future<void> showLocationEditor(BuildContext context,
     {StorageLocation? existing}) async {
   final provider = context.read<InventoryProvider>();
@@ -79,7 +80,8 @@ class _LocationEditorDialogState extends State<_LocationEditorDialog> {
     return AlertDialog(
       // Scrollbar, damit bei geöffneter Tastatur nichts überläuft.
       scrollable: true,
-      title: Text(widget.existing == null ? 'Neuer Ort' : 'Ort bearbeiten'),
+      title: Text(
+          widget.existing == null ? 'Neues Fach' : 'Fach bearbeiten'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -179,12 +181,12 @@ class LocationsScreen extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Ort löschen?'),
+        title: const Text('Fach löschen?'),
         content: Text(
           productCount == 0
               ? '„${location.name}“ wird entfernt.'
               : '„${location.name}“ wird entfernt. $productCount Produkt(e) '
-                  'behalten dann keinen Ort mehr.',
+                  'behalten dann kein Fach mehr.',
         ),
         actions: [
           TextButton(
@@ -209,7 +211,7 @@ class LocationsScreen extends StatelessWidget {
     if (locations.isEmpty) {
       return const Center(
         child: Text(
-          'Noch keine Orte.\nTippe auf +, um z. B. „Kühlschrank“ anzulegen.',
+          'Noch keine Fächer.\nTippe auf +, um z. B. „Kühlschrank“ anzulegen.',
           textAlign: TextAlign.center,
         ),
       );
@@ -220,9 +222,7 @@ class LocationsScreen extends StatelessWidget {
       itemCount: locations.length,
       itemBuilder: (context, index) {
         final location = locations[index];
-        final color = location.color != null
-            ? Color(location.color!)
-            : Theme.of(context).colorScheme.outline;
+        final color = locationDisplayColor(location, context);
         final count = provider.products
             .where((p) => p.locationId == location.id)
             .length;

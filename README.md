@@ -1,6 +1,6 @@
 # Inventar-App
 
-Eine Flutter-App für Android zur Verwaltung des eigenen Vorrats: Produkte erfassen, Lagerorte zuordnen und Ablaufdaten im Blick behalten. Die App zeigt, was als Nächstes abläuft und was ersetzt werden muss — inklusive Erinnerung per Benachrichtigung.
+Eine Flutter-App für Android zur Verwaltung des eigenen Vorrats: Produkte erfassen, Fächern zuordnen und Ablaufdaten im Blick behalten. Die App zeigt, was als Nächstes abläuft und was ersetzt werden muss — inklusive Erinnerung per Benachrichtigung.
 
 ## Funktionen
 
@@ -8,10 +8,10 @@ Eine Flutter-App für Android zur Verwaltung des eigenen Vorrats: Produkte erfas
   - 🔴 Abgelaufen — sollte ersetzt werden
   - 🟠 Läuft in den nächsten 7 Tagen ab
   - 🟢 Demnächst fällig
-- **Produkte** erfassen mit Name, Lagerort und Notizen; pro Produkt mehrere **Posten** mit eigener Menge und eigenem Ablaufdatum (z. B. 2 Stück bis März, 1 Stück bis Juli); Suche
-- **Produktliste** gruppiert nach Orten als farbige, aufklappbare Karten mit Mengen-Badges („Alle aufklappen/zuklappen“)
-- **Orte** verwalten (z. B. Kühlschrank, Keller, Vorratsschrank) mit frei wählbarer **Farbe** für bessere Übersicht
-- **Benachrichtigungen**: Erinnerung 3 Tage vor Ablauf und am Ablauftag (jeweils 9:00 Uhr), auch nach einem Geräte-Neustart
+- **Produkte** erfassen mit Name, Fach und Notizen; pro Produkt mehrere **Posten** mit eigener Menge und eigenem Ablaufdatum (z. B. 2 Stück bis März, 1 Stück bis Juli); Suche
+- **Produktliste** gruppiert nach Fächern als farbige, aufklappbare Karten mit Mengen-Badges („Alle aufklappen/zuklappen“)
+- **Fächer** verwalten (z. B. Kühlschrank, Keller, Vorratsschrank) mit frei wählbarer **Farbe** für bessere Übersicht
+- **Benachrichtigungen**: Erinnerung vor dem Ablauf und am Ablauftag, auch nach einem Geräte-Neustart; Vorlauf und Uhrzeit in den **Einstellungen** frei wählbar (ebenso die Schwelle für die orange Warnung)
 - **Offline & privat**: alle Daten liegen lokal in einer SQLite-Datenbank auf dem Gerät, kein Konto nötig
 - Deutsche Oberfläche, helles und dunkles Design (Material 3)
 
@@ -32,19 +32,21 @@ lib/
 ├── main.dart                        # App-Start, Theme, Navigation (3 Tabs)
 ├── models/
 │   ├── product.dart                 # Produkt + Posten (Batch) inkl. Ablauf-Status-Logik
-│   └── location.dart                # Lagerort mit Farbe
+│   └── location.dart                # Fach mit Farbe
 ├── providers/
-│   └── inventory_provider.dart      # App-Zustand, CRUD, Benachrichtigungs-Planung
+│   ├── inventory_provider.dart      # App-Zustand, CRUD, Benachrichtigungs-Planung
+│   └── settings_provider.dart       # Einstellungen (Warn-Schwelle, Erinnerungszeit)
 ├── services/
 │   ├── database_service.dart        # SQLite (Tabellen, Abfragen, Migrationen)
 │   └── notification_service.dart    # Lokale Erinnerungen planen/aufheben
 ├── screens/
-│   ├── overview_screen.dart         # Übersicht nach Dringlichkeit (je Posten)
-│   ├── products_screen.dart         # Produkte gruppiert nach Orten (farbige Karten)
+│   ├── overview_screen.dart         # Übersicht mit Dashboard, nach Dringlichkeit
+│   ├── products_screen.dart         # Produkte gruppiert nach Fächern (farbige Karten)
 │   ├── product_form_screen.dart     # Produkt anlegen/bearbeiten, Posten verwalten
-│   └── locations_screen.dart        # Orte verwalten inkl. Farbauswahl
+│   ├── locations_screen.dart        # Fächer verwalten inkl. Farbauswahl
+│   └── settings_screen.dart         # Einstellungen
 └── widgets/
-    └── product_tile.dart            # Produktzeile, Mengen-Badge, Orts-Chip
+    └── product_tile.dart            # Produktzeile, Mengen-Badge, Fach-Chip, Farb-Helfer
 ```
 
 ## Voraussetzungen
@@ -77,6 +79,19 @@ Die fertige APK liegt danach unter `build/app/outputs/flutter-apk/`.
 flutter test      # Unit-Tests (Ablauf-Logik, Serialisierung)
 flutter analyze   # Statische Analyse
 ```
+
+## Veröffentlichung auf F-Droid
+
+Das Projekt erfüllt die F-Droid-Voraussetzungen: quelloffen ([MIT-Lizenz](LICENSE)), keine proprietären Abhängigkeiten (kein Google Play Services, kein Tracking), keine Internetberechtigung, alle Daten lokal. Die App-Beschreibung für den Store liegt im [Fastlane-Format](fastlane/metadata/android/de-DE/) bei und wird von F-Droid automatisch übernommen.
+
+Schritte zur Veröffentlichung:
+
+1. Repository öffentlich machen (z. B. GitHub, GitLab oder Codeberg) und pushen.
+2. Ein Release taggen: `git tag v1.0.0 && git push --tags` (Version entspricht `version:` in `pubspec.yaml`).
+3. Bei [fdroiddata](https://gitlab.com/fdroid/fdroiddata) einen Merge Request mit der Build-Beschreibung für `de.msu.inventar_app` erstellen — oder einfacher: eine [„Request for Packaging“ (RFP)](https://gitlab.com/fdroid/rfp/-/issues) eröffnen, dann übernimmt das F-Droid-Team die Aufnahme.
+4. F-Droid baut die App aus dem Quellcode und signiert sie selbst; ein eigener Signaturschlüssel ist nicht nötig.
+
+Hinweis: Die MIT-Lizenz kann vor der Veröffentlichung noch gegen z. B. GPL-3.0 getauscht werden — F-Droid akzeptiert beide. Im `LICENSE`-File ggf. den Namen des Rechteinhabers anpassen.
 
 ## Hinweise zu Benachrichtigungen
 

@@ -5,17 +5,32 @@ import '../models/location.dart';
 import '../models/product.dart';
 import '../screens/product_form_screen.dart';
 
+/// Statusfarben; im Dark Mode hellere Töne für ausreichend Kontrast.
 Color statusColor(ExpiryStatus status, BuildContext context) {
+  final dark = Theme.of(context).brightness == Brightness.dark;
   switch (status) {
     case ExpiryStatus.expired:
-      return Colors.red.shade700;
+      return dark ? Colors.red.shade300 : Colors.red.shade700;
     case ExpiryStatus.expiringSoon:
-      return Colors.orange.shade800;
+      return dark ? Colors.orange.shade300 : Colors.orange.shade800;
     case ExpiryStatus.ok:
-      return Colors.green.shade700;
+      return dark ? Colors.green.shade300 : Colors.green.shade700;
     case ExpiryStatus.none:
       return Theme.of(context).colorScheme.outline;
   }
+}
+
+/// Anzeigefarbe eines Fachs; im Dark Mode aufgehellt, damit Text und
+/// Rahmen auf dunklem Grund lesbar bleiben.
+Color locationDisplayColor(StorageLocation? location, BuildContext context) {
+  final value = location?.color;
+  if (value == null) return Theme.of(context).colorScheme.outline;
+  final color = Color(value);
+  if (Theme.of(context).brightness != Brightness.dark) return color;
+  final hsl = HSLColor.fromColor(color);
+  return hsl
+      .withLightness((hsl.lightness + 0.25).clamp(0.65, 0.85))
+      .toColor();
 }
 
 String expiryLabel(DateTime? expiryDate) {
@@ -63,9 +78,7 @@ class LocationChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = location.color != null
-        ? Color(location.color!)
-        : Theme.of(context).colorScheme.outline;
+    final color = locationDisplayColor(location, context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(

@@ -1,0 +1,4 @@
+Erste Veröffentlichung:
+* Produkte mit mehreren Posten (Menge + Ablaufdatum)
+* Farbige Fächer, Übersicht mit Dashboard
+* Einstellbare Erinnerungen vor dem Ablauf

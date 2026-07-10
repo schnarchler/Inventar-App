@@ -1,0 +1,14 @@
+Inventar hilft dir, deinen Vorrat im Blick zu behalten: Produkte erfassen, Fächern zuordnen und Ablaufdaten verwalten. Die App zeigt, was als Nächstes abläuft und was ersetzt werden muss – und erinnert dich rechtzeitig per Benachrichtigung.
+
+<b>Funktionen</b>
+
+* Übersicht mit Dashboard: was ist abgelaufen, was läuft bald ab, wie groß ist der Bestand
+* Produkte mit mehreren Posten: pro Produkt beliebig viele Mengen mit eigenem Ablaufdatum
+* Fächer mit frei wählbaren Farben für bessere Übersicht (z. B. Kühlschrank, Keller, Rucksack)
+* Produktliste gruppiert nach Fächern als aufklappbare, farbige Karten mit Suche
+* Erinnerungen vor dem Ablauf und am Ablauftag – Vorlauf und Uhrzeit frei einstellbar
+* Helles und dunkles Design
+
+<b>Privatsphäre</b>
+
+Alle Daten bleiben lokal auf deinem Gerät in einer SQLite-Datenbank. Kein Konto, keine Werbung, kein Tracking, keine Internetberechtigung.

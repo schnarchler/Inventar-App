@@ -44,6 +44,13 @@ class OverviewScreen extends StatelessWidget {
 
     final totalPieces =
         provider.products.fold(0, (sum, p) => sum + p.totalQuantity);
+    // Effektive Stückzahlen (nicht Anzahl betroffener Produkte):
+    // 2 ablaufende Spritzen zählen als 2, auch wenn es 1 Produkt ist.
+    final expiredPieces =
+        expired.fold(0, (sum, e) => sum + e.batch.quantity);
+    final soonPieces = soon.fold(0, (sum, e) => sum + e.batch.quantity);
+    final expiredColor = statusColor(ExpiryStatus.expired, context);
+    final soonColor = statusColor(ExpiryStatus.expiringSoon, context);
 
     return ListView(
       padding: const EdgeInsets.only(bottom: 24),
@@ -55,18 +62,18 @@ class OverviewScreen extends StatelessWidget {
               Expanded(
                 child: _StatTile(
                   label: 'Abgelaufen',
-                  value: expired.length,
+                  value: expiredPieces,
                   icon: Icons.error_outline,
-                  iconColor: Colors.red.shade700,
+                  iconColor: expiredColor,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _StatTile(
                   label: 'Nächste $expiryWarnDays Tage',
-                  value: soon.length,
+                  value: soonPieces,
                   icon: Icons.warning_amber_outlined,
-                  iconColor: Colors.orange.shade800,
+                  iconColor: soonColor,
                 ),
               ),
               const SizedBox(width: 8),
@@ -92,24 +99,24 @@ class OverviewScreen extends StatelessWidget {
         if (expired.isNotEmpty) ...[
           _SectionHeader(
             icon: Icons.error_outline,
-            color: Colors.red.shade700,
-            title: 'Abgelaufen – ersetzen (${expired.length})',
+            color: expiredColor,
+            title: 'Abgelaufen – ersetzen ($expiredPieces Stück)',
           ),
           ..._tiles(context, expired, provider),
         ],
         if (soon.isNotEmpty) ...[
           _SectionHeader(
             icon: Icons.warning_amber_outlined,
-            color: Colors.orange.shade800,
+            color: soonColor,
             title: 'Läuft in den nächsten $expiryWarnDays Tagen ab '
-                '(${soon.length})',
+                '($soonPieces Stück)',
           ),
           ..._tiles(context, soon, provider),
         ],
         if (upcoming.isNotEmpty) ...[
           _SectionHeader(
             icon: Icons.schedule_outlined,
-            color: Colors.green.shade700,
+            color: statusColor(ExpiryStatus.ok, context),
             title: 'Demnächst',
           ),
           ..._tiles(context, upcoming, provider),

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../models/product.dart';
 import '../providers/inventory_provider.dart';
+import '../widgets/product_tile.dart';
 
 class ProductFormScreen extends StatefulWidget {
   /// null = neues Produkt anlegen, sonst bearbeiten.
@@ -148,18 +149,25 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             DropdownButtonFormField<int?>(
               initialValue: _locationId,
               decoration: const InputDecoration(
-                labelText: 'Ort',
+                labelText: 'Fach',
                 border: OutlineInputBorder(),
               ),
               items: [
                 const DropdownMenuItem<int?>(
                   value: null,
-                  child: Text('Kein Ort'),
+                  child: Text('Kein Fach'),
                 ),
                 ...locations.map(
                   (l) => DropdownMenuItem<int?>(
                     value: l.id,
-                    child: Text(l.name),
+                    // Fach-Name in der zugeteilten Farbe anzeigen.
+                    child: Text(
+                      l.name,
+                      style: TextStyle(
+                        color: locationDisplayColor(l, context),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
               ],

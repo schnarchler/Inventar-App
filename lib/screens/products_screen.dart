@@ -120,9 +120,7 @@ class _LocationSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final color = location?.color != null
-        ? Color(location!.color!)
-        : scheme.outline;
+    final color = locationDisplayColor(location, context);
     final totalQuantity =
         products.fold(0, (sum, p) => sum + p.totalQuantity);
 
@@ -153,7 +151,7 @@ class _LocationSection extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      location?.name ?? 'Ohne Ort',
+                      location?.name ?? 'Ohne Fach',
                       style: TextStyle(
                         color: location?.color != null
                             ? color
@@ -178,7 +176,7 @@ class _LocationSection extends StatelessWidget {
             products.isEmpty
                 ? const Padding(
                     padding: EdgeInsets.all(14),
-                    child: Text('Keine Produkte an diesem Ort.'),
+                    child: Text('Keine Produkte in diesem Fach.'),
                   )
                 : Column(
                     children: [

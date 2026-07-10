@@ -88,7 +88,7 @@ class RootScreen extends StatefulWidget {
 class _RootScreenState extends State<RootScreen> {
   int _index = 0;
 
-  static const _titles = ['Übersicht', 'Produkte', 'Orte'];
+  static const _titles = ['Übersicht', 'Produkte', 'Fächer'];
 
   Widget? _fab(BuildContext context) {
     switch (_index) {
@@ -102,7 +102,7 @@ class _RootScreenState extends State<RootScreen> {
         );
       case 2:
         return FloatingActionButton(
-          tooltip: 'Ort hinzufügen',
+          tooltip: 'Fach hinzufügen',
           onPressed: () => showLocationEditor(context),
           child: const Icon(Icons.add),
         );
@@ -152,7 +152,7 @@ class _RootScreenState extends State<RootScreen> {
           NavigationDestination(
             icon: Icon(Icons.place_outlined),
             selectedIcon: Icon(Icons.place),
-            label: 'Orte',
+            label: 'Fächer',
           ),
         ],
       ),
