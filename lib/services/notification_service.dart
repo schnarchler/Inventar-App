@@ -5,8 +5,8 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../models/product.dart';
 
-/// Plant lokale Benachrichtigungen: eine Erinnerung 3 Tage vor Ablauf
-/// und eine am Ablauftag, jeweils um 9:00 Uhr.
+/// Plant lokale Benachrichtigungen pro Bestand (Posten): eine Erinnerung
+/// 3 Tage vor Ablauf und eine am Ablauftag, jeweils um 9:00 Uhr.
 class NotificationService {
   static final NotificationService instance = NotificationService._();
   NotificationService._();
@@ -36,32 +36,29 @@ class NotificationService {
         ?.requestNotificationsPermission();
   }
 
-  /// Plant beide Erinnerungen für ein Produkt neu (alte werden entfernt).
+  /// Plant die Erinnerungen für alle Bestände eines Produkts.
   Future<void> scheduleForProduct(Product product) async {
-    final id = product.id;
-    if (id == null) return;
-    await cancelForProduct(id);
+    for (final batch in product.batches) {
+      final batchId = batch.id;
+      final expiry = batch.expiryDate;
+      if (batchId == null || expiry == null) continue;
 
-    final expiry = product.expiryDate;
-    if (expiry == null) return;
-
-    final reminderDate = DateTime(expiry.year, expiry.month,
-        expiry.day - _reminderDaysBefore, _notificationHour);
-    final expiryDate =
-        DateTime(expiry.year, expiry.month, expiry.day, _notificationHour);
-
-    await _schedule(
-      notificationId: id * 10,
-      when: reminderDate,
-      title: 'Läuft bald ab: ${product.name}',
-      body: 'Läuft in $_reminderDaysBefore Tagen ab.',
-    );
-    await _schedule(
-      notificationId: id * 10 + 1,
-      when: expiryDate,
-      title: 'Heute abgelaufen: ${product.name}',
-      body: 'Das Produkt sollte ersetzt werden.',
-    );
+      final quantityHint =
+          batch.quantity > 1 ? ' (${batch.quantity} Stück)' : '';
+      await _schedule(
+        notificationId: batchId * 10,
+        when: DateTime(expiry.year, expiry.month,
+            expiry.day - _reminderDaysBefore, _notificationHour),
+        title: 'Läuft bald ab: ${product.name}',
+        body: 'Läuft in $_reminderDaysBefore Tagen ab$quantityHint.',
+      );
+      await _schedule(
+        notificationId: batchId * 10 + 1,
+        when: DateTime(expiry.year, expiry.month, expiry.day, _notificationHour),
+        title: 'Heute abgelaufen: ${product.name}',
+        body: 'Das Produkt sollte ersetzt werden$quantityHint.',
+      );
+    }
   }
 
   Future<void> _schedule({
@@ -92,8 +89,10 @@ class NotificationService {
     );
   }
 
-  Future<void> cancelForProduct(int productId) async {
-    await _plugin.cancel(id: productId * 10);
-    await _plugin.cancel(id: productId * 10 + 1);
+  Future<void> cancelForBatches(Iterable<int> batchIds) async {
+    for (final batchId in batchIds) {
+      await _plugin.cancel(id: batchId * 10);
+      await _plugin.cancel(id: batchId * 10 + 1);
+    }
   }
 }

@@ -2,13 +2,16 @@ class StorageLocation {
   final int? id;
   final String name;
 
-  const StorageLocation({this.id, required this.name});
+  /// Farbe als ARGB-Wert; null = keine Farbe zugeordnet.
+  final int? color;
 
-  StorageLocation copyWith({int? id, String? name}) =>
-      StorageLocation(id: id ?? this.id, name: name ?? this.name);
+  const StorageLocation({this.id, required this.name, this.color});
 
-  Map<String, Object?> toMap() => {'id': id, 'name': name};
+  Map<String, Object?> toMap() => {'id': id, 'name': name, 'color': color};
 
-  factory StorageLocation.fromMap(Map<String, Object?> map) =>
-      StorageLocation(id: map['id'] as int?, name: map['name'] as String);
+  factory StorageLocation.fromMap(Map<String, Object?> map) => StorageLocation(
+        id: map['id'] as int?,
+        name: map['name'] as String,
+        color: map['color'] as int?,
+      );
 }

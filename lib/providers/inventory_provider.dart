@@ -5,6 +5,9 @@ import '../models/product.dart';
 import '../services/database_service.dart';
 import '../services/notification_service.dart';
 
+/// Ein Eintrag für die Übersicht: ein Bestand (Posten) samt Produkt.
+typedef ExpiryEntry = ({Product product, Batch batch});
+
 class InventoryProvider extends ChangeNotifier {
   final _db = DatabaseService.instance;
   final _notifications = NotificationService.instance;
@@ -17,17 +20,16 @@ class InventoryProvider extends ChangeNotifier {
   List<StorageLocation> get locations => _locations;
   bool get loaded => _loaded;
 
-  /// Produkte mit Ablaufdatum, sortiert nach Datum (nächstes zuerst).
-  List<Product> get expiringProducts =>
-      _products.where((p) => p.expiryDate != null).toList()
-        ..sort((a, b) => a.expiryDate!.compareTo(b.expiryDate!));
-
-  List<Product> get expiredProducts =>
-      expiringProducts.where((p) => p.status == ExpiryStatus.expired).toList();
-
-  List<Product> get expiringSoonProducts => expiringProducts
-      .where((p) => p.status == ExpiryStatus.expiringSoon)
-      .toList();
+  /// Alle Bestände mit Ablaufdatum, sortiert nach Datum (nächstes zuerst).
+  List<ExpiryEntry> get expiryEntries {
+    final entries = <ExpiryEntry>[
+      for (final product in _products)
+        for (final batch in product.batches)
+          if (batch.expiryDate != null) (product: product, batch: batch),
+    ];
+    entries.sort((a, b) => a.batch.expiryDate!.compareTo(b.batch.expiryDate!));
+    return entries;
+  }
 
   Future<void> load() async {
     _products = await _db.getProducts();
@@ -46,41 +48,35 @@ class InventoryProvider extends ChangeNotifier {
 
   // ---------- Produkte ----------
 
-  Future<void> addProduct(Product product) async {
-    final saved = await _db.insertProduct(product);
+  Future<void> saveProduct(Product product) async {
+    if (product.id != null) {
+      final oldBatches = await _db.getBatches(product.id!);
+      await _notifications
+          .cancelForBatches(oldBatches.map((b) => b.id!).toList());
+    }
+    final saved = await _db.saveProduct(product);
     await _notifications.scheduleForProduct(saved);
-    await load();
-  }
-
-  Future<void> updateProduct(Product product) async {
-    await _db.updateProduct(product);
-    await _notifications.scheduleForProduct(product);
     await load();
   }
 
   Future<void> deleteProduct(Product product) async {
     if (product.id != null) {
+      final batches = await _db.getBatches(product.id!);
+      await _notifications.cancelForBatches(batches.map((b) => b.id!).toList());
       await _db.deleteProduct(product.id!);
-      await _notifications.cancelForProduct(product.id!);
     }
-    await load();
-  }
-
-  Future<void> changeQuantity(Product product, int delta) async {
-    final newQuantity = (product.quantity + delta).clamp(0, 999999);
-    await _db.updateProduct(product.copyWith(quantity: newQuantity));
     await load();
   }
 
   // ---------- Orte ----------
 
-  Future<void> addLocation(String name) async {
-    await _db.insertLocation(StorageLocation(name: name));
+  Future<void> addLocation(String name, int? color) async {
+    await _db.insertLocation(StorageLocation(name: name, color: color));
     await load();
   }
 
-  Future<void> renameLocation(StorageLocation location, String name) async {
-    await _db.updateLocation(location.copyWith(name: name));
+  Future<void> updateLocation(StorageLocation location) async {
+    await _db.updateLocation(location);
     await load();
   }
 

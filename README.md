@@ -8,8 +8,9 @@ Eine Flutter-App für Android zur Verwaltung des eigenen Vorrats: Produkte erfas
   - 🔴 Abgelaufen — sollte ersetzt werden
   - 🟠 Läuft in den nächsten 7 Tagen ab
   - 🟢 Demnächst fällig
-- **Produkte** erfassen mit Name, Menge, Lagerort, Ablaufdatum und Notizen; Menge direkt in der Liste per +/− anpassen; Suche
-- **Orte** verwalten (z. B. Kühlschrank, Keller, Vorratsschrank) — anlegen, umbenennen, löschen
+- **Produkte** erfassen mit Name, Lagerort und Notizen; pro Produkt mehrere **Posten** mit eigener Menge und eigenem Ablaufdatum (z. B. 2 Stück bis März, 1 Stück bis Juli); Suche
+- **Produktliste** gruppiert nach Orten als farbige, aufklappbare Karten mit Mengen-Badges („Alle aufklappen/zuklappen“)
+- **Orte** verwalten (z. B. Kühlschrank, Keller, Vorratsschrank) mit frei wählbarer **Farbe** für bessere Übersicht
 - **Benachrichtigungen**: Erinnerung 3 Tage vor Ablauf und am Ablauftag (jeweils 9:00 Uhr), auch nach einem Geräte-Neustart
 - **Offline & privat**: alle Daten liegen lokal in einer SQLite-Datenbank auf dem Gerät, kein Konto nötig
 - Deutsche Oberfläche, helles und dunkles Design (Material 3)
@@ -30,20 +31,20 @@ Eine Flutter-App für Android zur Verwaltung des eigenen Vorrats: Produkte erfas
 lib/
 ├── main.dart                        # App-Start, Theme, Navigation (3 Tabs)
 ├── models/
-│   ├── product.dart                 # Produkt inkl. Ablauf-Status-Logik
-│   └── location.dart                # Lagerort
+│   ├── product.dart                 # Produkt + Posten (Batch) inkl. Ablauf-Status-Logik
+│   └── location.dart                # Lagerort mit Farbe
 ├── providers/
 │   └── inventory_provider.dart      # App-Zustand, CRUD, Benachrichtigungs-Planung
 ├── services/
-│   ├── database_service.dart        # SQLite (Tabellen, Abfragen)
+│   ├── database_service.dart        # SQLite (Tabellen, Abfragen, Migrationen)
 │   └── notification_service.dart    # Lokale Erinnerungen planen/aufheben
 ├── screens/
-│   ├── overview_screen.dart         # Übersicht nach Dringlichkeit
-│   ├── products_screen.dart         # Produktliste mit Suche
-│   ├── product_form_screen.dart     # Produkt anlegen/bearbeiten/löschen
-│   └── locations_screen.dart        # Orte verwalten
+│   ├── overview_screen.dart         # Übersicht nach Dringlichkeit (je Posten)
+│   ├── products_screen.dart         # Produkte gruppiert nach Orten (farbige Karten)
+│   ├── product_form_screen.dart     # Produkt anlegen/bearbeiten, Posten verwalten
+│   └── locations_screen.dart        # Orte verwalten inkl. Farbauswahl
 └── widgets/
-    └── product_tile.dart            # Produkt-Kachel mit Status-Farbe
+    └── product_tile.dart            # Produktzeile, Mengen-Badge, Orts-Chip
 ```
 
 ## Voraussetzungen

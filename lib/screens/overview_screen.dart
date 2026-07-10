@@ -6,19 +6,23 @@ import '../providers/inventory_provider.dart';
 import '../widgets/product_tile.dart';
 
 /// Übersicht: was ist abgelaufen (ersetzen) und was läuft als Nächstes ab.
+/// Jeder Posten erscheint einzeln mit seinem eigenen Ablaufdatum.
 class OverviewScreen extends StatelessWidget {
   const OverviewScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<InventoryProvider>();
-    final expired = provider.expiredProducts;
-    final soon = provider.expiringSoonProducts;
-    final upcoming = provider.expiringProducts
-        .where((p) => p.status == ExpiryStatus.ok)
+    final entries = provider.expiryEntries;
+    final expired =
+        entries.where((e) => e.batch.status == ExpiryStatus.expired).toList();
+    final soon = entries
+        .where((e) => e.batch.status == ExpiryStatus.expiringSoon)
         .toList();
+    final upcoming =
+        entries.where((e) => e.batch.status == ExpiryStatus.ok).toList();
 
-    if (expired.isEmpty && soon.isEmpty && upcoming.isEmpty) {
+    if (entries.isEmpty) {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(32),
@@ -47,7 +51,7 @@ class OverviewScreen extends StatelessWidget {
             color: Colors.red.shade700,
             title: 'Abgelaufen – ersetzen (${expired.length})',
           ),
-          ...expired.map((p) => ProductTile(product: p)),
+          ..._tiles(context, expired, provider),
         ],
         if (soon.isNotEmpty) ...[
           _SectionHeader(
@@ -55,7 +59,7 @@ class OverviewScreen extends StatelessWidget {
             color: Colors.orange.shade800,
             title: 'Läuft in den nächsten 7 Tagen ab (${soon.length})',
           ),
-          ...soon.map((p) => ProductTile(product: p)),
+          ..._tiles(context, soon, provider),
         ],
         if (upcoming.isNotEmpty) ...[
           _SectionHeader(
@@ -63,11 +67,25 @@ class OverviewScreen extends StatelessWidget {
             color: Colors.green.shade700,
             title: 'Demnächst',
           ),
-          ...upcoming.map((p) => ProductTile(product: p)),
+          ..._tiles(context, upcoming, provider),
         ],
       ],
     );
   }
+
+  List<Widget> _tiles(BuildContext context, List<ExpiryEntry> entries,
+          InventoryProvider provider) =>
+      [
+        for (final entry in entries)
+          Card(
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            child: ProductRow(
+              product: entry.product,
+              batch: entry.batch,
+              location: provider.locationById(entry.product.locationId),
+            ),
+          ),
+      ];
 }
 
 class _SectionHeader extends StatelessWidget {

@@ -24,22 +24,28 @@ Future<void> main() async {
   );
 }
 
+/// Dunkles Marineblau für die Kopfleiste (wie im Vorbild-Design).
+const _navy = Color(0xFF1F3A5F);
+
 class InventarApp extends StatelessWidget {
   const InventarApp({super.key});
+
+  ThemeData _theme(Brightness brightness) => ThemeData(
+        colorSchemeSeed: _navy,
+        brightness: brightness,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: _navy,
+          foregroundColor: Colors.white,
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Inventar',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorSchemeSeed: Colors.teal,
-        brightness: Brightness.light,
-      ),
-      darkTheme: ThemeData(
-        colorSchemeSeed: Colors.teal,
-        brightness: Brightness.dark,
-      ),
+      theme: _theme(Brightness.light),
+      darkTheme: _theme(Brightness.dark),
       locale: const Locale('de'),
       supportedLocales: const [Locale('de')],
       localizationsDelegates: const [
@@ -64,6 +70,27 @@ class _RootScreenState extends State<RootScreen> {
 
   static const _titles = ['Übersicht', 'Produkte', 'Orte'];
 
+  Widget? _fab(BuildContext context) {
+    switch (_index) {
+      case 1:
+        return FloatingActionButton(
+          tooltip: 'Produkt hinzufügen',
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const ProductFormScreen()),
+          ),
+          child: const Icon(Icons.add),
+        );
+      case 2:
+        return FloatingActionButton(
+          tooltip: 'Ort hinzufügen',
+          onPressed: () => showLocationEditor(context),
+          child: const Icon(Icons.add),
+        );
+      default:
+        return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -76,16 +103,7 @@ class _RootScreenState extends State<RootScreen> {
           LocationsScreen(),
         ],
       ),
-      floatingActionButton: _index == 1
-          ? FloatingActionButton(
-              heroTag: 'addProduct',
-              tooltip: 'Produkt hinzufügen',
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ProductFormScreen()),
-              ),
-              child: const Icon(Icons.add),
-            )
-          : null,
+      floatingActionButton: _fab(context),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (index) => setState(() => _index = index),

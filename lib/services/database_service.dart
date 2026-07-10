@@ -1,5 +1,5 @@
 import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite/sqflite.dart' hide Batch;
 
 import '../models/location.dart';
 import '../models/product.dart';
@@ -19,48 +19,139 @@ class DatabaseService {
     final path = join(await getDatabasesPath(), 'inventar.db');
     return openDatabase(
       path,
-      version: 1,
+      version: 2,
       onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE locations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL
+            name TEXT NOT NULL,
+            color INTEGER
           )
         ''');
         await db.execute('''
           CREATE TABLE products (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
-            quantity INTEGER NOT NULL DEFAULT 1,
             locationId INTEGER,
-            expiryDate INTEGER,
             notes TEXT,
             FOREIGN KEY (locationId) REFERENCES locations (id) ON DELETE SET NULL
           )
         ''');
+        await db.execute('''
+          CREATE TABLE batches (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            productId INTEGER NOT NULL,
+            quantity INTEGER NOT NULL DEFAULT 1,
+            expiryDate INTEGER,
+            FOREIGN KEY (productId) REFERENCES products (id) ON DELETE CASCADE
+          )
+        ''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          // v1 → v2: Orte bekommen eine Farbe; Menge/Ablaufdatum wandern
+          // vom Produkt in eine eigene Bestands-Tabelle (mehrere Posten
+          // mit unterschiedlichen Ablaufdaten pro Produkt).
+          await db.execute('ALTER TABLE locations ADD COLUMN color INTEGER');
+          await db.execute('ALTER TABLE products RENAME TO products_old');
+          await db.execute('''
+            CREATE TABLE products (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              name TEXT NOT NULL,
+              locationId INTEGER,
+              notes TEXT,
+              FOREIGN KEY (locationId) REFERENCES locations (id) ON DELETE SET NULL
+            )
+          ''');
+          await db.execute('''
+            INSERT INTO products (id, name, locationId, notes)
+            SELECT id, name, locationId, notes FROM products_old
+          ''');
+          await db.execute('''
+            CREATE TABLE batches (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              productId INTEGER NOT NULL,
+              quantity INTEGER NOT NULL DEFAULT 1,
+              expiryDate INTEGER,
+              FOREIGN KEY (productId) REFERENCES products (id) ON DELETE CASCADE
+            )
+          ''');
+          await db.execute('''
+            INSERT INTO batches (productId, quantity, expiryDate)
+            SELECT id, quantity, expiryDate FROM products_old
+          ''');
+          await db.execute('DROP TABLE products_old');
+        }
       },
     );
   }
 
-  // ---------- Produkte ----------
+  // ---------- Produkte & Bestände ----------
 
   Future<List<Product>> getProducts() async {
     final db = await database;
-    final rows = await db.query('products', orderBy: 'expiryDate IS NULL, expiryDate ASC, name COLLATE NOCASE ASC');
-    return rows.map(Product.fromMap).toList();
+    final productRows =
+        await db.query('products', orderBy: 'name COLLATE NOCASE ASC');
+    final batchRows = await db.query('batches',
+        orderBy: 'expiryDate IS NULL, expiryDate ASC');
+
+    final batchesByProduct = <int, List<Batch>>{};
+    for (final row in batchRows) {
+      final batch = Batch.fromMap(row);
+      batchesByProduct.putIfAbsent(batch.productId!, () => []).add(batch);
+    }
+    return productRows
+        .map((row) => Product.fromMap(row,
+            batches: batchesByProduct[row['id'] as int] ?? const []))
+        .toList();
   }
 
-  Future<Product> insertProduct(Product product) async {
+  Future<List<Batch>> getBatches(int productId) async {
     final db = await database;
-    final id = await db.insert('products', product.toMap()..remove('id'));
-    return product.copyWith(id: id);
+    final rows = await db
+        .query('batches', where: 'productId = ?', whereArgs: [productId]);
+    return rows.map(Batch.fromMap).toList();
   }
 
-  Future<void> updateProduct(Product product) async {
+  /// Legt ein Produkt an bzw. aktualisiert es und ersetzt seine Bestände.
+  /// Gibt das gespeicherte Produkt mit den neuen Bestands-IDs zurück.
+  Future<Product> saveProduct(Product product) async {
     final db = await database;
-    await db.update('products', product.toMap(),
-        where: 'id = ?', whereArgs: [product.id]);
+    late int productId;
+    final savedBatches = <Batch>[];
+
+    await db.transaction((txn) async {
+      if (product.id == null) {
+        productId = await txn.insert('products', product.toMap()..remove('id'));
+      } else {
+        productId = product.id!;
+        await txn.update('products', product.toMap(),
+            where: 'id = ?', whereArgs: [productId]);
+        await txn.delete('batches',
+            where: 'productId = ?', whereArgs: [productId]);
+      }
+      for (final batch in product.batches) {
+        final map = batch.toMap()
+          ..remove('id')
+          ..['productId'] = productId;
+        final batchId = await txn.insert('batches', map);
+        savedBatches.add(Batch(
+          id: batchId,
+          productId: productId,
+          quantity: batch.quantity,
+          expiryDate: batch.expiryDate,
+        ));
+      }
+    });
+
+    return Product(
+      id: productId,
+      name: product.name,
+      locationId: product.locationId,
+      notes: product.notes,
+      batches: savedBatches,
+    );
   }
 
   Future<void> deleteProduct(int id) async {
@@ -72,14 +163,14 @@ class DatabaseService {
 
   Future<List<StorageLocation>> getLocations() async {
     final db = await database;
-    final rows = await db.query('locations', orderBy: 'name COLLATE NOCASE ASC');
+    final rows =
+        await db.query('locations', orderBy: 'name COLLATE NOCASE ASC');
     return rows.map(StorageLocation.fromMap).toList();
   }
 
-  Future<StorageLocation> insertLocation(StorageLocation location) async {
+  Future<void> insertLocation(StorageLocation location) async {
     final db = await database;
-    final id = await db.insert('locations', location.toMap()..remove('id'));
-    return location.copyWith(id: id);
+    await db.insert('locations', location.toMap()..remove('id'));
   }
 
   Future<void> updateLocation(StorageLocation location) async {
